@@ -12,9 +12,6 @@ import MovieContainer from "../components/MovieContainer";
 import axios from "../../axiosConfig";
 import "./Movie.css";
 
-const moviesUrl = "https://api.themoviedb.org/3/movie/";
-const apiKey = "35dff10e3f2d8b07ed926313e0ef06b0";
-
 const uiCopy = {
   "pt-BR": {
     releaseDate: "Data de Lancamento",
@@ -24,8 +21,13 @@ const uiCopy = {
     description: "Descricao",
     submitRating: "Enviar avaliacao",
     ratingLabel: "Avaliacao",
+    commentsTitle: "Comentarios",
+    commentPlaceholder: "Escreva seu comentario...",
+    commentButton: "Publicar",
+    emptyComments: "Ainda nao ha comentarios.",
+    commentSuccess: "Comentario publicado!",
     ratingPlaceholder: "Selecione uma avaliacao...",
-    ratingSuccess: "Avaliacao enviada com sucesso!",
+    ratingSuccess: "Avaliacao salva com sucesso!",
     minutes: "min",
   },
   "en-US": {
@@ -36,8 +38,13 @@ const uiCopy = {
     description: "Overview",
     submitRating: "Submit rating",
     ratingLabel: "Rating",
+    commentsTitle: "Comments",
+    commentPlaceholder: "Write your comment...",
+    commentButton: "Publish",
+    emptyComments: "No comments yet.",
+    commentSuccess: "Comment published!",
     ratingPlaceholder: "Select a rating...",
-    ratingSuccess: "Rating submitted successfully!",
+    ratingSuccess: "Rating saved successfully!",
     minutes: "min",
   },
 };
@@ -48,13 +55,16 @@ const Movie = () => {
   const [rating, setRating] = useState(0);
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
   const [hoverRating, setHoverRating] = useState(0);
+  const [comments, setComments] = useState([]);
+  const [commentDraft, setCommentDraft] = useState("");
+  const [toastMessage, setToastMessage] = useState("");
+  const [toastVisible, setToastVisible] = useState(false);
   const language = navigator.language in uiCopy ? navigator.language : "pt-BR";
   const labels = uiCopy[language];
 
   const getMovie = async () => {
     try {
-      const movieUrl = `${moviesUrl}${id}?api_key=${apiKey}`;
-      const response = await axios.get(movieUrl);
+      const response = await axios.get(`movie/${id}`);
       setMovie(response.data);
     } catch (error) {
       console.error('Erro ao buscar filme:', error);
@@ -74,26 +84,70 @@ const Movie = () => {
     return new Intl.DateTimeFormat(language).format(date);
   };
 
-  const handleRatingChange = (e) => {
-    setRating(e.target.value);
+  const handleSubmitRating = (e) => {
+    e.preventDefault();
+    const ratingKey = `rating_${id}`;
+    localStorage.setItem(ratingKey, String(rating));
+    setRatingSubmitted(true);
   };
 
-  const handleSubmitRating = async (e) => {
+  const handleSubmitComment = (e) => {
     e.preventDefault();
-    try {
-      const response = await axios.post(`/movie/${id}/rating`, {
-        value: rating
-      });
-      console.log('Avaliação enviada com sucesso:', response.data);
-      setRatingSubmitted(true);
-    } catch (error) {
-      console.error('Erro ao enviar avaliação:', error);
-    }
+    const trimmed = commentDraft.trim();
+    if (!trimmed) return;
+
+    const next = [
+      {
+        id: crypto.randomUUID(),
+        text: trimmed,
+        createdAt: Date.now(),
+      },
+      ...comments,
+    ];
+
+    setComments(next);
+    localStorage.setItem(`comments_${id}`, JSON.stringify(next));
+    setCommentDraft("");
+    setToastMessage(labels.commentSuccess);
+    setToastVisible(true);
   };
 
   useEffect(() => {
     getMovie();
   }, []);
+
+  useEffect(() => {
+    const storedComments = localStorage.getItem(`comments_${id}`);
+    if (storedComments) {
+      try {
+        const parsed = JSON.parse(storedComments);
+        if (Array.isArray(parsed)) {
+          setComments(parsed);
+        }
+      } catch (error) {
+        console.error("Erro ao carregar comentarios:", error);
+      }
+    }
+
+    const storedRating = localStorage.getItem(`rating_${id}`);
+    if (storedRating) {
+      const parsed = Number(storedRating);
+      if (!Number.isNaN(parsed)) {
+        setRating(parsed);
+        setRatingSubmitted(true);
+      }
+    }
+  }, [id]);
+
+  useEffect(() => {
+    localStorage.setItem(`comments_${id}`, JSON.stringify(comments));
+  }, [comments, id]);
+
+  useEffect(() => {
+    if (!toastVisible) return undefined;
+    const timer = setTimeout(() => setToastVisible(false), 2400);
+    return () => clearTimeout(timer);
+  }, [toastVisible]);
 
   return (
     <div className="movie_page">
@@ -137,13 +191,13 @@ const Movie = () => {
               </div>
             </div>
           </div>
-          {!ratingSubmitted && (
+          <div className="rating_grid">
             <section className="rating_form">
               <h3>{labels.submitRating}</h3>
               <form onSubmit={handleSubmitRating}>
                 <label htmlFor="rating">{labels.ratingLabel}</label>
                 <div className="star_rating" role="radiogroup" aria-label={labels.ratingLabel}>
-                  {[...Array(10)].map((_, index) => {
+                  {[...Array(5)].map((_, index) => {
                     const value = index + 1;
                     const isActive = value <= (hoverRating || rating);
 
@@ -163,18 +217,47 @@ const Movie = () => {
                   })}
                 </div>
                 <input type="hidden" id="rating" value={rating} readOnly />
-                <button type="submit" disabled={!rating}>
+                <button className="primary_button" type="submit" disabled={!rating}>
                   {labels.submitRating}
                 </button>
               </form>
+              {ratingSubmitted && rating > 0 && (
+                <p className="rating_saved">{labels.ratingSuccess}</p>
+              )}
             </section>
-          )}
-          {ratingSubmitted && (
-            <section className="rating_form">
-              <p>{labels.ratingSuccess}</p>
+            <section className="comments_panel">
+              <h3>{labels.commentsTitle}</h3>
+              <form className="comment_form" onSubmit={handleSubmitComment}>
+                <textarea
+                  rows="3"
+                  placeholder={labels.commentPlaceholder}
+                  value={commentDraft}
+                  onChange={(e) => setCommentDraft(e.target.value)}
+                />
+                <button className="primary_button" type="submit" disabled={!commentDraft.trim()}>
+                  {labels.commentButton}
+                </button>
+              </form>
+              <div className="comment_list">
+                {comments.length === 0 ? (
+                  <p className="comment_empty">{labels.emptyComments}</p>
+                ) : (
+                  comments.map((comment) => (
+                    <div key={comment.id} className="comment_item">
+                      <p>{comment.text}</p>
+                      <span>{new Intl.DateTimeFormat(language).format(comment.createdAt)}</span>
+                    </div>
+                  ))
+                )}
+              </div>
             </section>
-          )}
+          </div>
         </>
+      )}
+      {toastMessage && (
+        <div className={`toast ${toastVisible ? "show" : ""}`}>
+          {toastMessage}
+        </div>
       )}
     </div>
   );
