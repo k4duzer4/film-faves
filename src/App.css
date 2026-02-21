@@ -1,0 +1,15 @@
+ .App {
+	min-height: 100vh;
+ }
+
+ .AppContent {
+	padding-top: 5.5rem;
+	padding-bottom: 4rem;
+ }
+
+ @media screen and (max-width: 640px) {
+	.AppContent {
+		padding-top: 6.5rem;
+		padding-bottom: 3rem;
+	}
+ }

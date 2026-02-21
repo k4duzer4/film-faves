@@ -1,35 +1,45 @@
 /* eslint-disable react/prop-types */
 import { Link } from "react-router-dom";
-import { Card } from "react-bootstrap";
 import { BsStarFill } from "react-icons/bs";
-import { StyledMovieContainer, StyledLink } from "./MovieContainerStyles";
+import {
+  StyledMovieContainer,
+  PosterLink,
+  PosterImage,
+  MovieMeta,
+  RatingBadge,
+  StyledLink,
+} from "./MovieContainerStyles";
 
 const imgUrl = "https://image.tmdb.org/t/p/w500/";
 
-const MovieContainer = ({ movie, showLink = true }) => {
+const MovieContainer = ({ movie, showLink = true, variant = "default" }) => {
+  const rating = movie.vote_average ? movie.vote_average.toFixed(1) : "-";
+  const year = movie.release_date ? movie.release_date.slice(0, 4) : "";
 
   return (
-    <StyledMovieContainer>
-      <Card style={{ width: '15rem' }}> 
-        <Link to={`/movie/${movie.id}`}>
-          <Card.Img variant="top" src={imgUrl + movie.poster_path} alt={movie.title} />
-        </Link>
-        <Card.Body>
-          <Card.Title>{movie.title}</Card.Title>
-          <Card.Text>
-            <BsStarFill />
-            {movie.vote_count}
-          </Card.Text>
-          {showLink && (
-            <StyledLink to={`/movie/${movie.id}`}>
-              Detalhes
-            </StyledLink>
-          )}
-        </Card.Body>
-      </Card>
+    <StyledMovieContainer $variant={variant}>
+      <PosterLink to={`/movie/${movie.id}`} aria-label={`Abrir ${movie.title}`}>
+        <PosterImage
+          src={imgUrl + movie.poster_path}
+          alt={movie.title}
+          loading="lazy"
+        />
+      </PosterLink>
+      <MovieMeta>
+        <div>
+          <h3>{movie.title}</h3>
+          {year && <span>{year}</span>}
+        </div>
+        <RatingBadge>
+          <BsStarFill />
+          {rating}
+        </RatingBadge>
+      </MovieMeta>
+      {showLink && (
+        <StyledLink to={`/movie/${movie.id}`}>Detalhes</StyledLink>
+      )}
     </StyledMovieContainer>
   );
 };
-
 
 export default MovieContainer;

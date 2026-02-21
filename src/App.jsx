@@ -1,18 +1,17 @@
-import {Outlet } from 'react-router-dom'
-import Navbar from './components/Navbar'
-import 'bootstrap/dist/css/bootstrap.min.css';
+import { Outlet } from "react-router-dom";
+import Navbar from "./components/Navbar";
 
-
-import './App.css'
-
+import "./App.css";
 
 function App() {
   return (
-      <div className='App'>
-        <Navbar />
+    <div className="App">
+      <Navbar />
+      <main className="AppContent">
         <Outlet />
-      </div> 
-  )
+      </main>
+    </div>
+  );
 }
 
-export default App
+export default App;

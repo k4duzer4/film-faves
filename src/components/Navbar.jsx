@@ -1,6 +1,4 @@
-/* eslint-disable no-unused-vars */
-import React, { useState } from "react";
-import axios from "../../axiosConfig";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { BsSearch } from "react-icons/bs";
 import { NavbarContainer } from "./NavbarStyles";
@@ -10,17 +8,22 @@ const Navbar = () => {
   const [search, setSearch] = useState("");
   const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 12);
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const handleSubmit = (e) => {
     e.preventDefault();
     if (!search) return;
 
-    try {
-      const response = await axios.get(`search/movie?query=${search}`);
-      navigate(`/search?q=${search}`, { replace: true });
-      setSearch("");
-    } catch (error) {
-      console.error('Erro ao buscar filmes:', error);
-    }
+    navigate(`/search?q=${search}`, { replace: true });
+    setSearch("");
   };
 
   return (

@@ -1,8 +1,13 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
-import { BiMoneyWithdraw, BiSolidWallet, BiSolidHourglass, BiFile, BiSolidData } from "react-icons/bi";
-import { Container, Button, Form } from "react-bootstrap";
+import {
+  BiMoneyWithdraw,
+  BiSolidWallet,
+  BiSolidHourglass,
+  BiFile,
+  BiSolidData,
+} from "react-icons/bi";
 import MovieContainer from "../components/MovieContainer";
 import axios from "../../axiosConfig";
 import "./Movie.css";
@@ -10,11 +15,41 @@ import "./Movie.css";
 const moviesUrl = "https://api.themoviedb.org/3/movie/";
 const apiKey = "35dff10e3f2d8b07ed926313e0ef06b0";
 
+const uiCopy = {
+  "pt-BR": {
+    releaseDate: "Data de Lancamento",
+    budget: "Orcamento",
+    revenue: "Receita",
+    runtime: "Duracao",
+    description: "Descricao",
+    submitRating: "Enviar avaliacao",
+    ratingLabel: "Avaliacao",
+    ratingPlaceholder: "Selecione uma avaliacao...",
+    ratingSuccess: "Avaliacao enviada com sucesso!",
+    minutes: "min",
+  },
+  "en-US": {
+    releaseDate: "Release Date",
+    budget: "Budget",
+    revenue: "Revenue",
+    runtime: "Runtime",
+    description: "Overview",
+    submitRating: "Submit rating",
+    ratingLabel: "Rating",
+    ratingPlaceholder: "Select a rating...",
+    ratingSuccess: "Rating submitted successfully!",
+    minutes: "min",
+  },
+};
+
 const Movie = () => {
   const { id } = useParams();
   const [movie, setMovie] = useState(null);
   const [rating, setRating] = useState(0);
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
+  const [hoverRating, setHoverRating] = useState(0);
+  const language = navigator.language in uiCopy ? navigator.language : "pt-BR";
+  const labels = uiCopy[language];
 
   const getMovie = async () => {
     try {
@@ -31,6 +66,12 @@ const Movie = () => {
       style: "currency",
       currency: "USD",
     });
+  };
+
+  const dateFormat = (dateString) => {
+    if (!dateString) return "-";
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat(language).format(date);
   };
 
   const handleRatingChange = (e) => {
@@ -59,68 +100,79 @@ const Movie = () => {
       {movie && (
         <>
           <div className="movie_container">
-            <MovieContainer movie={movie} showLink={false} />
+            <MovieContainer movie={movie} showLink={false} variant="detail" />
             <div className="movie_info">
               <p className="movie_tagline">&quot;{movie.tagline}&quot;</p>
               <div className="movie_info_info">
                 <h3>
-                  <BiSolidData /> Data de Lançamento
-                  <p>{movie.release_date}</p>
+                  <BiSolidData /> {labels.releaseDate}
                 </h3>
+                <p>{dateFormat(movie.release_date)}</p>
               </div>
               <div className="movie_info_info">
                 <h3>
-                  <BiSolidWallet /> Bilheteria
-                  <p>{moneyFormat(movie.budget)}</p>
+                  <BiSolidWallet /> {labels.budget}
                 </h3>
+                <p>{moneyFormat(movie.budget)}</p>
               </div>
               <div className="movie_info_info">
                 <h3>
-                  <BiMoneyWithdraw /> Bilheteria
-                  <p>{moneyFormat(movie.revenue)}</p>
+                  <BiMoneyWithdraw /> {labels.revenue}
                 </h3>
+                <p>{moneyFormat(movie.revenue)}</p>
               </div>
               <div className="movie_info_info">
                 <h3>
-                  <BiSolidHourglass /> Duração
-                  <p>{movie.runtime}</p>
+                  <BiSolidHourglass /> {labels.runtime}
                 </h3>
+                <p>
+                  {movie.runtime ? `${movie.runtime} ${labels.minutes}` : "-"}
+                </p>
               </div>
               <div className="movie_info_info">
                 <h3>
-                  <BiFile /> Descrição
-                  <p>{movie.overview}</p>
+                  <BiFile /> {labels.description}
                 </h3>
+                <p>{movie.overview}</p>
               </div>
             </div>
           </div>
           {!ratingSubmitted && (
-            <Container className="rating_form">
-              <h3>Enviar Avaliação</h3>
-              <Form onSubmit={handleSubmitRating}>
-                <Form.Group controlId="rating">
-                  <Form.Label>Avaliação</Form.Label>
-                  <Form.Control 
-                    as="select" 
-                    value={rating} 
-                    onChange={handleRatingChange}
-                  >
-                    <option value={0}>Selecione uma avaliação...</option>
-                    {[...Array(10)].map((_, index) => (
-                      <option key={index} value={index + 1}>{index + 1}</option>
-                    ))}
-                  </Form.Control>
-                </Form.Group>
-                <Button variant="primary" type="submit">
-                  Enviar Avaliação
-                </Button>
-              </Form>
-            </Container>
+            <section className="rating_form">
+              <h3>{labels.submitRating}</h3>
+              <form onSubmit={handleSubmitRating}>
+                <label htmlFor="rating">{labels.ratingLabel}</label>
+                <div className="star_rating" role="radiogroup" aria-label={labels.ratingLabel}>
+                  {[...Array(10)].map((_, index) => {
+                    const value = index + 1;
+                    const isActive = value <= (hoverRating || rating);
+
+                    return (
+                      <button
+                        key={value}
+                        type="button"
+                        className={isActive ? "star active" : "star"}
+                        aria-pressed={rating === value}
+                        onClick={() => setRating(value)}
+                        onMouseEnter={() => setHoverRating(value)}
+                        onMouseLeave={() => setHoverRating(0)}
+                      >
+                        ★
+                      </button>
+                    );
+                  })}
+                </div>
+                <input type="hidden" id="rating" value={rating} readOnly />
+                <button type="submit" disabled={!rating}>
+                  {labels.submitRating}
+                </button>
+              </form>
+            </section>
           )}
           {ratingSubmitted && (
-            <Container className="rating_form">
-              <p>Avaliação enviada com sucesso!</p>
-            </Container>
+            <section className="rating_form">
+              <p>{labels.ratingSuccess}</p>
+            </section>
           )}
         </>
       )}

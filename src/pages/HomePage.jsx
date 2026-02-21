@@ -1,8 +1,14 @@
 import { useState, useEffect } from "react";
-import { Container, Row, Col } from "react-bootstrap"; 
 import axios from "../../axiosConfig";
 import MovieContainer from "../components/MovieContainer";
-import { StyledContainer, StyledHeading, StyledMoviesContainer } from "./HomePageStyles";
+import {
+  PageContainer,
+  PageHeader,
+  PageTitle,
+  PageSubtitle,
+  MoviesGrid,
+  EmptyState,
+} from "./HomePageStyles";
 
 const HomePage = () => {
   const [recomendMovies, setRecomendMovies] = useState([]);
@@ -21,20 +27,23 @@ const HomePage = () => {
   }, []);
 
   return (
-    <StyledContainer>
-      <StyledHeading>Filmes Populares</StyledHeading>
-      <StyledMoviesContainer>
-        <Container fluid> 
-          <Row>
-            {recomendMovies.map((movie) => (
-              <Col key={movie.id} xs={12} sm={6} md={4} lg={3}>
-                <MovieContainer movie={movie} />
-              </Col>
-            ))}
-          </Row>
-        </Container>
-      </StyledMoviesContainer>
-    </StyledContainer>
+    <PageContainer>
+      <PageHeader>
+        <PageTitle>Filmes Populares</PageTitle>
+        <PageSubtitle>
+          Uma selecao fresca dos titulos mais assistidos agora.
+        </PageSubtitle>
+      </PageHeader>
+      {recomendMovies.length === 0 ? (
+        <EmptyState>Carregando os filmes mais quentes do momento.</EmptyState>
+      ) : (
+        <MoviesGrid>
+          {recomendMovies.map((movie) => (
+            <MovieContainer key={movie.id} movie={movie} />
+          ))}
+        </MoviesGrid>
+      )}
+    </PageContainer>
   );
 }
 
